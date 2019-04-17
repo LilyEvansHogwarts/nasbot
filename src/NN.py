@@ -14,9 +14,13 @@ class NN:
         self.path1 = path
         self.num_layers = self.lu.size
         self.zeta = 0.1
+        print(self.ll.size, self.lu.size, len(self.path1))
 
     def ispool(self, i):
         return self.ll[i][4:] == 'pool'
+
+    def isfc(self, i):
+        return self.ll[i] == 'fc'
 
     def calc_path2(self):
         path2 = []
@@ -40,14 +44,19 @@ class NN:
                 self.input_neurons[i] = np.array([self.output_neurons[j] for j in self.path1[i]]).sum()
                 
                 self.output_neurons[i] = self.input_neurons[i] if self.ispool(i) else self.lu[i]
-                self.lm[i] = self.input_neurons[i] if self.ispool(i) else self.input_neurons[i]*self.output_neurons[i]
+                if self.ispool(i):
+                    self.lm[i] = self.input_neurons[i]
+                elif self.isfc(i):
+                    self.lm[i] = int(0.1 * self.input_neurons[i] * self.output_neurons[i])
+                else:
+                    self.lm[i] = self.input_neurons[i] * self.output_neurons[i]
         # ip and op
-        tmp = self.zeta * self.lm.sum()
+        tmp = int(self.zeta * self.lm.sum())
         self.lm[0] = tmp
         self.lm[-1] = tmp
         # softmax layers
         softmax_idx = np.arange(self.num_layers)[self.ll == 'softmax']
-        self.lm[softmax_idx] = tmp/(self.ll == 'softmax').sum()
+        self.lm[softmax_idx] = int(tmp/(self.ll == 'softmax').sum())
     
     # path lengths
     def path_lengths(self):
