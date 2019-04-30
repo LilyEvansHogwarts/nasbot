@@ -14,7 +14,9 @@ class NN:
         self.path1 = path
         self.num_layers = self.lu.size
         self.zeta = 0.1
-        print(self.ll.size, self.lu.size, len(self.path1))
+        self.calc_lm()
+        self.calc_path2()
+        self.path_lengths()
 
     def ispool(self, i):
         return self.ll[i][4:] == 'pool'
@@ -62,12 +64,24 @@ class NN:
     def path_lengths(self):
         self.delta_ip = np.zeros((3, self.num_layers))
         self.delta_op = np.zeros((3, self.num_layers))
+        self.paths_ip = [np.array([0])]
+        self.paths_op = []
         for i in range(self.num_layers):
+            self.paths_op.append(np.array([]))
+        self.paths_op[-1] = np.array([0])
+        for i in range(1, self.num_layers):
             self.delta_ip[0,i] = np.array([self.delta_ip[0,j] for j in self.path1[i]]).min() + 1
             self.delta_ip[1,i] = np.array([self.delta_ip[1,j] for j in self.path1[i]]).max() + 1
-        for i in np.arange(self.num_layers,0,-1)-1:
-            self.delta_op[0,i] = np.array([self.delta_ip[0,j] for j in self.path2[i]]).min() + 1
-            self.delta_op[1,i] = np.array([self.delta_ip[1,j] for j in self.path2[i]]).min() + 1
+            tmp = np.concatenate((self.paths_ip[j]+1 for j in self.path1[i]))
+            self.paths_ip.append(tmp)
+            self.delta_ip[2,i] = tmp.mean()
+
+        for i in np.arange(self.num_layers-1,0,-1)-1:
+            self.delta_op[0,i] = np.array([self.delta_op[0,j] for j in self.path2[i]]).min() + 1
+            self.delta_op[1,i] = np.array([self.delta_op[1,j] for j in self.path2[i]]).max() + 1
+            tmp = np.concatenate((self.paths_op[j]+1 for j in self.path2[i]))
+            self.paths_op[i] = tmp
+            self.delta_op[2,i] = tmp.mean()
 
 
 
